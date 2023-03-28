@@ -8,14 +8,11 @@
 #
 #Class:     CI 201 @ 1200-1250 (M,W,F)
 #
-#Notes:
-#           work on find and replace (sed or awk)
-#https://erau.instructure.com/courses/151725/assignments/3043432
 ###############################################################################
 
 
 function main_menu () {
-    echo "-------------- Main Menu ---------------"
+    echo -e "\n-------------- Main Menu ---------------"
     select choice in 'Ping Sweep' 'Port Scan' 'Print Scan Results' 'Exit Program'
     do
         case $choice in
@@ -30,6 +27,7 @@ function main_menu () {
                 ;;
             'Exit Program')
                 echo "Exiting Program"
+                date &> /dev/null
                 exit
                 ;;
             *)
@@ -41,7 +39,7 @@ function main_menu () {
 
 
 function ping_sweep () {
-    echo "-------------- Ping Sweep --------------"
+    echo -e "\n-------------- Ping Sweep --------------"
     echo $(date) >> pingresults.txt
 
     valid_ip_adress=0
@@ -55,27 +53,31 @@ function ping_sweep () {
         then
             ((valid_ip_adress++))
         else
-            echo "ERROR: Invalid IPv4 address, try 8.8.8.8"
+            echo "ERROR: Invalid IPv4 address, try 1.1.1.1"
         fi
     done
+    #Reads in IPv4 address using regex to ensure user enters a valid IPv4 format
 
     ip_address=$(echo $ip_address | grep -Eo '^([0-9]{1,3}[.]){3}')
-    for i in {1..256}
+    #Parses first 3 bytes of the IP address
+
+    for i in {1..255}
     do
         echo -en "\nScanning: $ip_address$i; "
-        ping_ip=$(echo )
-        if ping -c1 "$ip_address$i" >2
+        if ping -c1 -W0.1 "$ip_address$i" >2
+        #In English: if a successful ping is found within 0.1 seconds of ${ip_addy} then...
         then
             echo -n " Status: ONLINE"
             echo "$ip_address$i; Status: ONLINE" >> pingresults.txt
         fi
     done
+    #Ulitlizes a for loop to search if the status of every port
     main_menu
 }
 
 
 function port_scan () {
-    echo "-------------- Port Scan ---------------"
+    echo -e "\n-------------- Port Scan ---------------"
     echo $(date) >> portscanresults.txt
 
     valid_ip_adress=0
@@ -89,26 +91,32 @@ function port_scan () {
         then
             ((valid_ip_adress++))
         else
-            echo "ERROR: Invalid IPv4 address, try 8.8.8.8"
+            echo "ERROR: Invalid IPv4 address, try 1.1.1.1"
         fi
     done
+    #Reads in IPv4 address using regex to ensure user enters a valid IPv4 format
 
     ip_address=$(echo $ip_address | grep -Eo '^([0-9]{1,3}[.]){3}[0-9]{1,3}$')
-    for i in {0..1023}
+    #Parses first 3 bytes of the IP address
+
+    for i in {1..500}
     do
-        echo -en "\nScanning: $ip_address:$i; "
-        ping_ip=$(echo )
-        if ping -c1 "$ip_address$i" >2
+        echo -en "\nScanning port $i on $ip_address; "
+        if nc -z -v -w1 $ip_address $i 2>&1 | grep -q 'succeeded'
+            #In English: if the output of netcat z (portscan), v(verbose) w1 (with a time restriction of 1 second) for ip addy at whatever port includes the word 'succeeded' (meaning port was open), then...
         then
             echo -n " Status: ONLINE"
-            echo "$ip_address$i; Status: ONLINE" >> ping_sweep.txt
+            echo "$ip_address$i; Status: ONLINE" >> portscanresults.txt
         fi
+
     done
+
     main_menu
 }
 
+
 function print_scan_results () {
-    echo "---------- Print Scan Results ----------"
+    echo -e "\n---------- Print Scan Results ----------"
     select choice in 'Ping Sweep Results' 'Port Scan Results' 'Remove Ping Sweep Results File' 'Remove Port Scan Results File' 'Return to Main Menu'
     do
         case $choice in
@@ -132,7 +140,7 @@ function print_scan_results () {
                 ;;
         esac
     done
-
 }
+
 
 main_menu
